@@ -54,6 +54,16 @@ camera.show_object(scene, match_aspect=True, scale=1.1)
 controller = gfx.PanZoomController(camera, register_events=renderer)
 
 
+def get_view_state():
+    return (
+        camera.camera_matrix.tobytes(),
+        camera.local.matrix.tobytes(),
+        renderer.physical_size(),
+        renderer.logical_size,
+    )
+
+last_view_state = get_view_state()
+
 def map_screen_to_world(pos, viewport_size):
     # first convert position to NDC
     x = pos[0] / viewport_size[0] * 2 - 1
@@ -66,8 +76,7 @@ def map_screen_to_world(pos, viewport_size):
 
     return pos_world
 
-
-def animate():
+def update_axes():
     # get range of screen space
     xmin, ymin = 0, renderer.logical_size[1]
     xmax, ymax = renderer.logical_size[0], 0
@@ -92,8 +101,16 @@ def animate():
     major_step_x, major_step_y = statsx["tick_step"], statsy["tick_step"]
     grid.material.major_step = major_step_x, major_step_y
     grid.material.minor_step = 0.2 * major_step_x, 0.2 * major_step_y
-
     # print(statsx)
+
+
+def animate():
+    global last_view_state
+    view_state = get_view_state()
+    if last_view_state != view_state:
+        # update only if the camera has changed or if the viewport has changed
+        update_axes()
+        last_view_state = view_state
 
     renderer.render(scene, camera)
 
